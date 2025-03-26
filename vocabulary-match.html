@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English-Chinese Vocabulary Match</title>
+    <style>
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            background-color: #f0f9ff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #2c7873;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #6b8c9e;
+            margin-bottom: 20px;
+        }
+        .timer-container {
+            background-color: white;
+            border-radius: 20px;
+            padding: 10px 20px;
+            display: inline-block;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c7873;
+            font-family: monospace;
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+        .card {
+            height: 90px;
+            border-radius: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            font-size: 16px;
+            padding: 0 10px;
+            box-sizing: border-box;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .english {
+            background-color: white;
+            color: #2c7873;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 2px solid #e0e0e0;
+        }
+        .chinese {
+            background-color: #ffebf0;
+            color: #c45c66;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 2px solid #ffd6e0;
+        }
+        .matched {
+            visibility: hidden;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        .message {
+            margin: 25px auto;
+            padding: 15px 25px;
+            background-color: #2c7873;
+            color: white;
+            border-radius: 10px;
+            display: inline-block;
+            opacity: 0;
+            transition: opacity 0.5s;
+            font-size: 18px;
+            max-width: 80%;
+        }
+        .show {
+            opacity: 1;
+        }
+        .restart-btn {
+            margin: 20px auto;
+            padding: 12px 25px;
+            background-color: #2c7873;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .restart-btn:hover {
+            background-color: #228f84;
+            transform: translateY(-2px);
+        }
+        .stats {
+            margin-top: 15px;
+            color: #6b8c9e;
+            font-size: 14px;
+        }
+        @media (max-width: 900px) {
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .card {
+                height: 80px;
+                font-size: 15px;
+            }
+        }
+        @media (max-width: 600px) {
+            .game-board {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+            .card {
+                height: 70px;
+                font-size: 14px;
+                border-radius: 35px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .timer {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>English-Chinese Vocabulary Match</h1>
+    <div class="subtitle">Match the words with their translations</div>
+    
+    <div class="timer-container">
+        <div class="timer" id="timer">00:00</div>
+    </div>
+    
+    <div class="game-board" id="gameBoard"></div>
+    
+    <div class="message" id="message"></div>
+    <button class="restart-btn" id="restartBtn">Play Again</button>
+    <div class="stats" id="stats"></div>
+
+    <script>
+        const wordPairs = [
+            { english: "introduction", chinese: "介绍" },
+            { english: "report", chinese: "报告" },
+            { english: "environment", chinese: "环境" },
+            { english: "frequently", chinese: "经常" },
+            { english: "discuss", chinese: "讨论" },
+            { english: "aim", chinese: "目的" },
+            { english: "increases", chinese: "增加" },
+            { english: "global warming", chinese: "温室效应" },
+            { english: "emit", chinese: "排放" },
+            { english: "release", chinese: "释放" },
+            { english: "harmful", chinese: "有害的" },
+            { english: "public transport", chinese: "公共交通" },
+            { english: "crucial", chinese: "重要" },
+            { english: "landfill", chinese: "垃圾填土" },
+            { english: "resources", chinese: "资源" },
+            { english: "reusable", chinese: "可重新使用" },
+            { english: "marine life", chinese: "海洋生物" },
+            { english: "electrical appliances", chinese: "电器" },
+            { english: "emission", chinese: "排放（名词）" },
+            { english: "conserve", chinese: "保护" },
+            { english: "obligation", chinese: "义务" },
+            { english: "conclusion", chinese: "总结" }
+        ];
+
+        let selectedCards = [];
+        let matchedPairs = 0;
+        let startTime;
+        let timerInterval;
+        let gameActive = false;
+        let attempts = 0;
+
+        const gameBoard = document.getElementById('gameBoard');
+        const timerElement = document.getElementById('timer');
+        const messageElement = document.getElementById('message');
+        const restartBtn = document.getElementById('restartBtn');
+        const statsElement = document.getElementById('stats');
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function createGameBoard() {
+            gameBoard.innerHTML = '';
+            selectedCards = [];
+            matchedPairs = 0;
+            attempts = 0;
+            messageElement.textContent = '';
+            messageElement.classList.remove('show');
+            restartBtn.style.display = 'none';
+            statsElement.textContent = '';
+            
+            let deck = [];
+            wordPairs.forEach(pair => {
+                deck.push({ text: pair.english, type: 'english', pair: pair.chinese });
+                deck.push({ text: pair.chinese, type: 'chinese', pair: pair.english });
+            });
+
+            deck = shuffleArray(deck);
+
+            deck.forEach((word, index) => {
+                const card = document.createElement('div');
+                card.className = `card ${word.type}`;
+                card.textContent = word.text;
+                card.dataset.index = index;
+                card.dataset.text = word.text;
+                card.dataset.pair = word.pair;
+                card.dataset.type = word.type;
+                card.addEventListener('click', handleCardClick);
+                gameBoard.appendChild(card);
+            });
+
+            startTimer();
+            gameActive = true;
+        }
+
+        function handleCardClick(event) {
+            if (!gameActive) return;
+            
+            const clickedCard = event.target;
+            
+            if (clickedCard.classList.contains('matched') || 
+                selectedCards.includes(clickedCard)) {
+                return;
+            }
+
+            clickedCard.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                clickedCard.style.transform = 'scale(1)';
+            }, 100);
+            
+            selectedCards.push(clickedCard);
+            attempts++;
+
+            if (selectedCards.length === 2) {
+                const [card1, card2] = selectedCards;
+                
+                if ((card1.dataset.text === card2.dataset.pair && card2.dataset.text === card1.dataset.pair)) {
+                    setTimeout(() => {
+                        card1.classList.add('matched');
+                        card2.classList.add('matched');
+                        selectedCards = [];
+                        matchedPairs++;
+                        
+                        if (matchedPairs === wordPairs.length) {
+                            endGame();
+                        }
+                    }, 500);
+                } else {
+                    setTimeout(() => {
+                        card1.style.transform = 'scale(1)';
+                        card2.style.transform = 'scale(1)';
+                        selectedCards = [];
+                    }, 1000);
+                }
+            }
+        }
+
+        function startTimer() {
+            startTime = new Date();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            const currentTime = new Date();
+            const elapsedTime = new Date(currentTime - startTime);
+            const minutes = String(elapsedTime.getMinutes()).padStart(2, '0');
+            const seconds = String(elapsedTime.getSeconds()).padStart(2, '0');
+            timerElement.textContent = `${minutes}:${seconds}`;
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            gameActive = false;
+            const finalTime = timerElement.textContent;
+            const accuracy = Math.round((wordPairs.length / attempts) * 100);
+            
+            messageElement.textContent = `Congratulations! Time: ${finalTime}`;
+            messageElement.classList.add('show');
+            statsElement.textContent = `Matches: ${wordPairs.length} | Attempts: ${attempts} | Accuracy: ${accuracy}%`;
+            restartBtn.style.display = 'inline-block';
+        }
+
+        restartBtn.addEventListener('click', createGameBoard);
+
+        // Initialize the game
+        createGameBoard();
+    </script>
+</body>
+</html>
